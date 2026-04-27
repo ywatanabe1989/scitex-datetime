@@ -1,5 +1,16 @@
 # scitex-datetime
 
+<!-- scitex-badges:start -->
+[![PyPI](https://img.shields.io/pypi/v/scitex-datetime.svg)](https://pypi.org/project/scitex-datetime/)
+[![Python](https://img.shields.io/pypi/pyversions/scitex-datetime.svg)](https://pypi.org/project/scitex-datetime/)
+[![Tests](https://github.com/ywatanabe1989/scitex-datetime/actions/workflows/test.yml/badge.svg)](https://github.com/ywatanabe1989/scitex-datetime/actions/workflows/test.yml)
+[![Install Test](https://github.com/ywatanabe1989/scitex-datetime/actions/workflows/install-test.yml/badge.svg)](https://github.com/ywatanabe1989/scitex-datetime/actions/workflows/install-test.yml)
+[![Coverage](https://codecov.io/gh/ywatanabe1989/scitex-datetime/graph/badge.svg)](https://codecov.io/gh/ywatanabe1989/scitex-datetime)
+[![Docs](https://readthedocs.org/projects/scitex-datetime/badge/?version=latest)](https://scitex-datetime.readthedocs.io/en/latest/)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+<!-- scitex-badges:end -->
+
+
 Small datetime helpers extracted from the [SciTeX](https://github.com/ywatanabe1989/scitex-python) ecosystem as a standalone package.
 
 ## Install
