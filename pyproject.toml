@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-datetime"
-version = "0.1.0"
+version = "0.1.1"
 description = "Datetime helpers (linspace, normalize_timestamp, format helpers) — standalone module from the SciTeX ecosystem"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -46,6 +46,12 @@ Documentation = "https://scitex-datetime.readthedocs.io"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+scitex_datetime = ["_skills/**/*.md"]
+
+[project.entry-points."scitex_dev.skills"]
+scitex-datetime = "scitex_datetime"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
