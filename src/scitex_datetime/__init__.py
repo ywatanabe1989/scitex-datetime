@@ -14,6 +14,8 @@ Provides utilities for datetime operations including:
 - get_time_delta_seconds: Calculate time differences
 """
 
+from __future__ import annotations
+
 try:
     from importlib.metadata import version as _v, PackageNotFoundError
     try:
@@ -37,6 +39,7 @@ from ._normalize_timestamp import (
 )
 
 __all__ = [
+    "__version__",
     # Core functions
     "linspace",
     "normalize_timestamp",
