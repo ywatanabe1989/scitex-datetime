@@ -1,0 +1,434 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scitex_datetime._normalize_timestamp &mdash; scitex-datetime 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=92734c54"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            scitex-datetime
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/scitex_datetime.html">scitex_datetime</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">scitex-datetime</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scitex_datetime._normalize_timestamp</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scitex_datetime._normalize_timestamp</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># Timestamp: &quot;2026-01-05 14:30:00 (ywatanabe)&quot;</span>
+<span class="c1"># File: /home/ywatanabe/proj/scitex-code/src/scitex/datetime/_normalize_timestamp.py</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Timestamp Standardization Utilities</span>
+
+<span class="sd">Functionality:</span>
+<span class="sd">- Standardizes timestamps to consistent format defined in CONFIG.FORMATS.TIMESTAMP</span>
+<span class="sd">- Handles various input formats (datetime objects, strings, timestamps)</span>
+<span class="sd">- Provides UTC normalization</span>
+<span class="sd">- Ensures consistent timestamp formatting across the codebase</span>
+
+<span class="sd">Input formats supported:</span>
+<span class="sd">- datetime objects (with or without timezone)</span>
+<span class="sd">- Unix timestamps (int/float)</span>
+<span class="sd">- Various string formats</span>
+
+<span class="sd">Output:</span>
+<span class="sd">- Standardized timestamp strings in format: &quot;%Y-%m-%d %H:%M:%S.%f&quot;</span>
+<span class="sd">- UTC normalized timestamps</span>
+<span class="sd">- Validation utilities</span>
+
+<span class="sd">Prerequisites:</span>
+<span class="sd">- CONFIG.FORMATS.TIMESTAMP for standard format</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># Default standard format</span>
+<span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+
+<span class="c1"># Try to get standard format from config, fallback to default</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">scitex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">stx</span>
+
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">stx</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load_configs</span><span class="p">()</span>
+    <span class="n">STANDARD_FORMAT</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">,</span> <span class="s2">&quot;FORMATS&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">&quot;TIMESTAMP&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_FORMAT</span>
+    <span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+    <span class="n">STANDARD_FORMAT</span> <span class="o">=</span> <span class="n">DEFAULT_FORMAT</span>
+
+<span class="c1"># Common alternative formats to try when parsing</span>
+<span class="n">ALTERNATIVE_FORMATS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S&quot;</span><span class="p">,</span>  <span class="c1"># ISO 8601 with T (no microseconds)</span>
+    <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y/%m/</span><span class="si">%d</span><span class="s2"> %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y/%m/</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">-%m-%Y %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">-%m-%Y %H:%M:%S&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%Y %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%Y %H:%M:%S&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%Y, %H:%M:%S&quot;</span><span class="p">,</span>  <span class="c1"># Format used in REC_START</span>
+    <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2"> %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H:%M:%S&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="normalize_timestamp">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.normalize_timestamp">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_timestamp</span><span class="p">(</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">return_as</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;str&quot;</span><span class="p">,</span>
+    <span class="n">normalize_utc</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Standardize any timestamp format to requested output type.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    timestamp : datetime, str, int, or float</span>
+<span class="sd">        Timestamp in any supported format</span>
+<span class="sd">    return_as : str</span>
+<span class="sd">        Output format: &quot;str&quot; (default), &quot;datetime&quot;, or &quot;timestamp&quot;</span>
+<span class="sd">    normalize_utc : bool</span>
+<span class="sd">        If True, normalize to UTC timezone</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str, datetime, or float</span>
+<span class="sd">        Standardized timestamp in requested format:</span>
+<span class="sd">        - &quot;str&quot;: String in CONFIG.FORMATS.TIMESTAMP format</span>
+<span class="sd">        - &quot;datetime&quot;: datetime object</span>
+<span class="sd">        - &quot;timestamp&quot;: Unix timestamp (float)</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from datetime import datetime</span>
+<span class="sd">    &gt;&gt;&gt; dt = datetime(2010, 6, 18, 10, 15, 0)</span>
+<span class="sd">    &gt;&gt;&gt; normalize_timestamp(dt, return_as=&quot;str&quot;, normalize_utc=False)</span>
+<span class="sd">    &#39;2010-06-18 10:15:00&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert to datetime object</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">to_datetime</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+
+    <span class="c1"># Normalize to UTC if requested</span>
+    <span class="k">if</span> <span class="n">normalize_utc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+    <span class="c1"># Return in requested format</span>
+    <span class="k">if</span> <span class="n">return_as</span> <span class="o">==</span> <span class="s2">&quot;str&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">STANDARD_FORMAT</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">return_as</span> <span class="o">==</span> <span class="s2">&quot;datetime&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dt</span>
+    <span class="k">elif</span> <span class="n">return_as</span> <span class="o">==</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;return_as must be &#39;str&#39;, &#39;datetime&#39;, or &#39;timestamp&#39;, got: </span><span class="si">{</span><span class="n">return_as</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="to_datetime">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.to_datetime">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_datetime</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert various timestamp formats to datetime object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    timestamp : datetime, str, int, or float</span>
+<span class="sd">        Timestamp in any supported format</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    datetime</span>
+<span class="sd">        Datetime object</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If string format cannot be parsed</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If timestamp type is not supported</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Already datetime</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">timestamp</span>
+
+    <span class="c1"># Unix timestamp (int/float)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+    <span class="c1"># String format</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># Handle nanosecond precision by truncating to microseconds</span>
+        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">timestamp</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">timestamp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="c1"># Keep only first 6 digits of fractional seconds</span>
+            <span class="n">truncated_microseconds</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">6</span><span class="p">]</span>
+            <span class="c1"># Handle cases where there might be additional text after microseconds</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">truncated_microseconds</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="c1"># Extract just the digit portion</span>
+                <span class="n">digits</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\d+)&quot;</span><span class="p">,</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">digits</span><span class="p">:</span>
+                    <span class="n">truncated_microseconds</span> <span class="o">=</span> <span class="n">digits</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)[:</span><span class="mi">6</span><span class="p">]</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">truncated_microseconds</span><span class="p">])</span>
+
+        <span class="c1"># Try parsing with various formats</span>
+        <span class="k">for</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="n">ALTERNATIVE_FORMATS</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+        <span class="c1"># If no format matched, raise error</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not parse timestamp string: </span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Tried formats: </span><span class="si">{</span><span class="n">ALTERNATIVE_FORMATS</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;timestamp must be datetime, str, int, or float, got: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="validate_timestamp_format">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.validate_timestamp_format">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_timestamp_format</span><span class="p">(</span><span class="n">timestamp_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validate that a timestamp string matches the standard format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    timestamp_str : str</span>
+<span class="sd">        Timestamp string to validate</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if string matches standard format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">timestamp_str</span><span class="p">,</span> <span class="n">STANDARD_FORMAT</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="format_for_filename">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.format_for_filename">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_for_filename</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format timestamp for use in filenames (no spaces or colons).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    timestamp : datetime or str</span>
+<span class="sd">        Timestamp to format</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        Filename-safe timestamp string (YYYYMMDD_HHMMSS)</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from datetime import datetime</span>
+<span class="sd">    &gt;&gt;&gt; dt = datetime(2010, 6, 18, 10, 15, 0)</span>
+<span class="sd">    &gt;&gt;&gt; format_for_filename(dt)</span>
+<span class="sd">    &#39;20100618_101500&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">to_datetime</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="format_for_display">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.format_for_display">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_for_display</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format timestamp for human-readable display.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    timestamp : datetime or str</span>
+<span class="sd">        Timestamp to format</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        Human-readable timestamp string</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from datetime import datetime</span>
+<span class="sd">    &gt;&gt;&gt; dt = datetime(2010, 6, 18, 10, 15, 0)</span>
+<span class="sd">    &gt;&gt;&gt; format_for_display(dt)</span>
+<span class="sd">    &#39;2010-06-18 10:15:00&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">to_datetime</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_patient_recording_start_format">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.parse_patient_recording_start_format">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_patient_recording_start_format</span><span class="p">(</span>
+    <span class="n">patient_recording_start_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse recording start time from CONFIG.PATIENTS.REC_START format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    patient_recording_start_str : str</span>
+<span class="sd">        Recording start time string in format &quot;DD/MM/YYYY, HH:MM:SS&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    datetime</span>
+<span class="sd">        Parsed datetime object</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; parse_patient_recording_start_format(&quot;10/06/2010, 07:40:34&quot;)</span>
+<span class="sd">    datetime.datetime(2010, 6, 10, 7, 40, 34)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">REC_START_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%Y, %H:%M:%S&quot;</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">patient_recording_start_str</span><span class="p">,</span> <span class="n">REC_START_FORMAT</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_time_delta_seconds">
+<a class="viewcode-back" href="../../api/scitex_datetime.html#scitex_datetime.get_time_delta_seconds">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_time_delta_seconds</span><span class="p">(</span>
+    <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">end</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate time difference in seconds between two timestamps.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    start : datetime or str</span>
+<span class="sd">        Start timestamp</span>
+<span class="sd">    end : datetime or str</span>
+<span class="sd">        End timestamp</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Time difference in seconds</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start_dt</span> <span class="o">=</span> <span class="n">to_datetime</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+    <span class="n">end_dt</span> <span class="o">=</span> <span class="n">to_datetime</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">end_dt</span> <span class="o">-</span> <span class="n">start_dt</span>
+    <span class="k">return</span> <span class="n">delta</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span></div>
+
+
+
+<span class="c1"># EOF</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Yusuke Watanabe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
