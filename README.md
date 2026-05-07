@@ -32,6 +32,19 @@
 pip install scitex-datetime
 ```
 
+## Architecture
+
+```
+scitex_datetime/
+├── __init__.py                ← public API (linspace, normalize_timestamp,
+│                                 to_datetime, format_for_filename, ...)
+├── _linspace.py               ← linearly-spaced datetime arrays
+└── _normalize_timestamp.py    ← parse + standardize heterogeneous strings
+```
+
+Pure-stdlib datetime helpers; the umbrella `scitex.datetime` import path
+is preserved via a `sys.modules`-alias bridge.
+
 ## Quick Start
 
 ```python
@@ -68,6 +81,19 @@ sxd.get_time_delta_seconds(dt1, dt2)
 ```
 
 </details>
+
+## Demo
+
+```mermaid
+flowchart LR
+    S1["'2026/04/27 10:30:00'"] --> P["sxd.to_datetime()"]
+    S2["'2026-04-27T10:30:00'"] --> N["sxd.normalize_timestamp()"]
+    P --> D["datetime"]
+    N --> D
+    D --> F["sxd.format_for_filename()<br/>→ '2026-04-27_103000'"]
+    A["start, stop"] --> L["sxd.linspace(num=100)"]
+    L --> R["[datetime, ...]"]
+```
 
 ## Status
 
