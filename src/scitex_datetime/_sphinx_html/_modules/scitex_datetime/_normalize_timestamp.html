@@ -111,11 +111,12 @@
 <span class="c1"># Default standard format</span>
 <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
 
-<span class="c1"># Try to get standard format from config, fallback to default</span>
+<span class="c1"># Try to get standard format from config, fallback to default.</span>
+<span class="c1"># Use the standalone scitex_io peer (PA304 §3 — no umbrella imports here).</span>
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">scitex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">stx</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scitex_io</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_configs</span> <span class="k">as</span> <span class="n">_load_configs</span>
 
-    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">stx</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load_configs</span><span class="p">()</span>
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">_load_configs</span><span class="p">()</span>
     <span class="n">STANDARD_FORMAT</span> <span class="o">=</span> <span class="p">(</span>
         <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">CONFIG</span><span class="p">,</span> <span class="s2">&quot;FORMATS&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">&quot;TIMESTAMP&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_FORMAT</span>
     <span class="p">)</span>
