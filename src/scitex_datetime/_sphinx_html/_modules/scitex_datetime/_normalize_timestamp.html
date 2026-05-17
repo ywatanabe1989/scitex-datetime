@@ -113,11 +113,17 @@
 
 <span class="c1"># Try to get standard format from config, fallback to default.</span>
 <span class="c1"># Use the standalone scitex_io peer (PA304 §3 — no umbrella imports here).</span>
-<span class="c1"># `scitex_io` is not declared in pyproject extras; the helper still gives us</span>
-<span class="c1"># the canonical None-on-ImportError shape so the import audit (PA-302) is happy.</span>
+<span class="c1"># scitex-io is the [all]-tier extra (see pyproject.toml). The helper&#39;s</span>
+<span class="c1"># extra/pkg kwargs let `last_install_hint(&quot;scitex_io&quot;)` surface</span>
+<span class="c1"># `pip install scitex-datetime[all]` to users who hit the fallback.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scitex_dev</span><span class="w"> </span><span class="kn">import</span> <span class="n">try_import_optional</span>
 
-<span class="n">_load_configs</span> <span class="o">=</span> <span class="n">try_import_optional</span><span class="p">(</span><span class="s2">&quot;scitex_io&quot;</span><span class="p">,</span> <span class="s2">&quot;load_configs&quot;</span><span class="p">)</span>
+<span class="n">_load_configs</span> <span class="o">=</span> <span class="n">try_import_optional</span><span class="p">(</span>
+    <span class="s2">&quot;scitex_io&quot;</span><span class="p">,</span>
+    <span class="n">attr</span><span class="o">=</span><span class="s2">&quot;load_configs&quot;</span><span class="p">,</span>
+    <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">pkg</span><span class="o">=</span><span class="s2">&quot;scitex-datetime&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">STANDARD_FORMAT</span> <span class="o">=</span> <span class="n">DEFAULT_FORMAT</span>
 <span class="k">if</span> <span class="n">_load_configs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
