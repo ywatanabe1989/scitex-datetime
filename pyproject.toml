@@ -18,31 +18,41 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+    # Tier 1 (hard) — required for every public surface (Python API +
+    # Skills) to import out of `pip install scitex-datetime`.
+    #   numpy:      _linspace.py top-level `import numpy as np`.
+    #   scitex-dev: _normalize_timestamp.py top-level
+    #               `from scitex_dev import try_import_optional`, and
+    #               provides the linter/audit/skill-install plumbing.
     "numpy",
-    "pandas",
-    # `_normalize_timestamp` calls `try_import_optional` at module top
-    # (canonical optional-dep shape per PA-302). The helper lives in
-    # scitex-dev's light import surface (scitex-config + tomli only),
-    # so it's always importable in user installs.
     "scitex-dev>=0.11.7",
 ]
 
 [project.optional-dependencies]
+# Tier 2 — `pip install scitex-datetime[all]` enables every
+# graceful-degradation feature. Per SK11 (general/05_development_11):
+# fragmented extras ([docs], [mcp], [plot], ...) are forbidden — they
+# all collapse into [all].
+all = [
+    # scitex_io.load_configs() — when present, STANDARD_FORMAT picks up
+    # CONFIG.FORMATS.TIMESTAMP; when absent, falls back to
+    # DEFAULT_FORMAT ("%Y-%m-%d %H:%M:%S"). Imported via
+    # try_import_optional in _normalize_timestamp.py.
+    "scitex-io",
+]
+# Tier 3 — maintainer tooling. NOT duplicated against [project.dependencies]
+# (pip install -e ".[dev]" walks default deps automatically). Sphinx
+# tooling lives here because doc-build is a maintainer concern, not a
+# user-facing runtime feature.
 dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "scitex-dev>=0.11.7",
-]
-docs = [
     "sphinx>=7.0",
     "sphinx-rtd-theme>=2.0",
     "myst-parser>=2.0",
     "sphinx-copybutton>=0.5",
     "sphinx-autodoc-typehints>=1.25",
-]
-all = [
-    "scitex-datetime[dev,docs]",
 ]
 
 [project.urls]

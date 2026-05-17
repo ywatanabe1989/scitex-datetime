@@ -36,11 +36,17 @@ DEFAULT_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Try to get standard format from config, fallback to default.
 # Use the standalone scitex_io peer (PA304 §3 — no umbrella imports here).
-# `scitex_io` is not declared in pyproject extras; the helper still gives us
-# the canonical None-on-ImportError shape so the import audit (PA-302) is happy.
+# scitex-io is the [all]-tier extra (see pyproject.toml). The helper's
+# extra/pkg kwargs let `last_install_hint("scitex_io")` surface
+# `pip install scitex-datetime[all]` to users who hit the fallback.
 from scitex_dev import try_import_optional
 
-_load_configs = try_import_optional("scitex_io", "load_configs")
+_load_configs = try_import_optional(
+    "scitex_io",
+    attr="load_configs",
+    extra="all",
+    pkg="scitex-datetime",
+)
 STANDARD_FORMAT = DEFAULT_FORMAT
 if _load_configs is not None:
     try:

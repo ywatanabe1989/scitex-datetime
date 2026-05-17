@@ -21,7 +21,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install package + docs deps
-        run: pip install -e ".[docs]"
+        # Sphinx tooling lives under [dev] per the 3-tier dependency
+        # policy (scitex/general/05_development_11_dependency-tiers.md);
+        # the old fragmented [docs] extra has been removed.
+        run: pip install -e ".[dev]"
 
       - name: Build Sphinx HTML (warnings fail PRs only)
         run: |
