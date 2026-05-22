@@ -51,12 +51,21 @@ jobs:
           touch src/scitex_datetime/_sphinx_html/.nojekyll
 
       - name: Commit refreshed HTML if it changed (develop push only)
+        # Non-blocking. `develop` is a protected branch that requires N
+        # status checks on incoming commits; a bot push from the workflow
+        # has no checks attached and is rejected with `GH006: Protected
+        # branch update failed`. The vendored `_sphinx_html/` refresh is a
+        # nice-to-have for the next release wheel, not a correctness gate
+        # — let the docs job stay green when the push is rejected, and
+        # let the release pipeline regenerate `_sphinx_html/` on its own
+        # branch where the push succeeds.
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        continue-on-error: true
         run: |
           if [ -n "$(git status --porcelain src/scitex_datetime/_sphinx_html)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src/scitex_datetime/_sphinx_html
             git commit -m "docs(sphinx_html): refresh from CI build"
-            git push
+            git push || echo "::warning::push to protected develop rejected (expected under GH006); skipping vendored _sphinx_html refresh on this run"
           fi
