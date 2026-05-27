@@ -1,20 +1,12 @@
 scitex-datetime
-=============
+===============
 
-Small linear-algebra helpers (distance, geometric median, cosine, nannorm)
-extracted from the SciTeX ecosystem as a standalone package.
+Datetime helpers (``linspace``, ``normalize_timestamp``, ``to_datetime``,
+filename / display formatters, time-delta seconds) extracted from the
+SciTeX ecosystem as a standalone package.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    api
-
-API Reference
--------------
-
-.. autosummary::
-   :toctree: api
-   :recursive:
-
-   scitex_datetime
