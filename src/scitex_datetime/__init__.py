@@ -30,6 +30,7 @@ except _PackageNotFoundError:
 del _version, _PackageNotFoundError
 
 from ._linspace import linspace
+from ._time_stamper import TimeStamper
 from ._normalize_timestamp import (
     ALTERNATIVE_FORMATS,
     STANDARD_FORMAT,
@@ -46,6 +47,7 @@ __all__ = [
     "__version__",
     # Core functions
     "linspace",
+    "TimeStamper",
     "normalize_timestamp",
     "to_datetime",
     # Formatting functions

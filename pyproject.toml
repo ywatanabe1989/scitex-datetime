@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scitex-datetime"
-version = "0.1.4"
+version = "0.2.0"
 description = "Datetime helpers (linspace, normalize_timestamp, format helpers) — standalone module from the SciTeX ecosystem"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -25,6 +25,7 @@ dependencies = [
     #               `from scitex_dev import try_import_optional`, and
     #               provides the linter/audit/skill-install plumbing.
     "numpy",
+    "pandas",
     "scitex-dev>=0.11.7",
 ]
 
