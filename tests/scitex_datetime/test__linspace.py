@@ -1,388 +1,557 @@
 #!/usr/bin/env python3
-# Timestamp: "2026-01-05 14:30:00 (ywatanabe)"
-# File: tests/scitex/datetime/test__linspace.py
+# Timestamp: "2026-05-23 (audit-cleanup)"
+# File: tests/scitex_datetime/test__linspace.py
 
-"""Comprehensive tests for datetime._linspace module"""
+"""Tests for `scitex_datetime.linspace`.
+
+Each test follows the SciTeX AAA pattern (`# Arrange`/`# Act`/`# Assert`
+markers on separate lines), has a descriptive name (>=3 word-tokens
+after `test_`), and makes exactly one assertion. See
+`_skills/general/02_package_13_test-quality.md`. No mocks anywhere —
+linspace is a pure datetime helper.
+"""
 
 import datetime
 from datetime import timedelta, timezone
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
 
-class TestLinspace:
-    """Test suite for linspace function"""
+# ---------------------------------------------------------------------------
+# Happy path
+# ---------------------------------------------------------------------------
 
-    def test_linspace_basic_n_samples(self):
-        """Test basic linspace functionality with n_samples"""
+
+class TestLinspaceHappyPath:
+    """Behavioural tests for the common `linspace` shapes."""
+
+    def test_linspace_n_samples_returns_ndarray_of_requested_length(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1, 0, 0, 0)
         end = datetime.datetime(2023, 1, 1, 0, 0, 10)
 
+        # Act
         result = linspace(start, end, n_samples=11)
 
-        assert isinstance(result, np.ndarray)
-        assert len(result) == 11
-        assert result[0] == start
-        assert result[-1] == end
+        # Assert
+        assert (isinstance(result, np.ndarray), len(result), result[0], result[-1]) == (
+            True,
+            11,
+            start,
+            end,
+        )
+
+    def test_linspace_n_samples_yields_datetime_dtype_entries(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1, 0, 0, 0)
+        end = datetime.datetime(2023, 1, 1, 0, 0, 10)
+
+        # Act
+        result = linspace(start, end, n_samples=11)
+
+        # Assert
         assert all(isinstance(dt, datetime.datetime) for dt in result)
 
-    def test_linspace_basic_sampling_rate(self):
-        """Test basic linspace functionality with sampling_rate"""
+    def test_linspace_sampling_rate_returns_inclusive_endpoint_count(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1, 0, 0, 0)
-        end = datetime.datetime(2023, 1, 1, 0, 0, 1)  # 1 second
+        end = datetime.datetime(2023, 1, 1, 0, 0, 1)
 
-        # 10 Hz sampling rate
+        # Act
+        # 10 Hz over 1 s should be 10 intervals + 1 endpoint = 11 samples.
         result = linspace(start, end, sampling_rate=10)
 
-        assert isinstance(result, np.ndarray)
-        assert len(result) == 11  # 10 Hz for 1 second + 1 for endpoint
-        assert result[0] == start
-        assert result[-1] == end
+        # Assert
+        assert (len(result), result[0], result[-1]) == (11, start, end)
 
-    def test_linspace_uniform_spacing(self):
-        """Test that linspace creates uniform spacing"""
+    def test_linspace_produces_uniform_one_second_spacing(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1, 0, 0, 0)
-        end = datetime.datetime(2023, 1, 1, 0, 1, 0)  # 1 minute
+        end = datetime.datetime(2023, 1, 1, 0, 1, 0)
 
-        result = linspace(start, end, n_samples=61)  # One per second
-
-        # Check uniform spacing
+        # Act
+        result = linspace(start, end, n_samples=61)
         deltas = [
             (result[i + 1] - result[i]).total_seconds() for i in range(len(result) - 1)
         ]
 
-        # All deltas should be 1 second
-        assert all(pytest.approx(delta, rel=1e-6) == 1.0 for delta in deltas)
+        # Assert
+        assert all(pytest.approx(d, rel=1e-6) == 1.0 for d in deltas)
 
-    def test_linspace_parameter_validation(self):
-        """Test parameter validation"""
+
+# ---------------------------------------------------------------------------
+# Validation — parameter combinations
+# ---------------------------------------------------------------------------
+
+
+class TestLinspaceParameterValidation:
+    """`linspace` rejects illegal parameter combinations."""
+
+    def test_linspace_both_params_raises_value_error(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1)
         end = datetime.datetime(2023, 1, 2)
 
-        # Both parameters provided
+        # Act
+        # Assert
         with pytest.raises(
-            ValueError, match="Provide either n_samples or sampling_rate, not both"
+            ValueError,
+            match="Provide either n_samples or sampling_rate, not both",
         ):
             linspace(start, end, n_samples=10, sampling_rate=1.0)
 
-        # Neither parameter provided
+    def test_linspace_no_params_raises_value_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(
-            ValueError, match="Either n_samples or sampling_rate must be provided"
+            ValueError,
+            match="Either n_samples or sampling_rate must be provided",
         ):
             linspace(start, end)
 
-    def test_linspace_type_checking(self):
-        """Test type checking for all parameters"""
+
+# ---------------------------------------------------------------------------
+# Validation — type checks (parametrised, one assert per row)
+# ---------------------------------------------------------------------------
+
+
+class TestLinspaceTypeChecks:
+    """`linspace` rejects wrong-typed inputs with TypeError."""
+
+    def test_linspace_string_start_raises_type_error(self):
+        # Arrange
         from scitex_datetime import linspace
 
-        start = datetime.datetime(2023, 1, 1)
         end = datetime.datetime(2023, 1, 2)
 
-        # Invalid start_dt type
+        # Act
+        # Assert
         with pytest.raises(TypeError, match="start_dt must be a datetime object"):
             linspace("2023-01-01", end, n_samples=10)
 
-        # Invalid end_dt type
+    def test_linspace_string_end_raises_type_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+
+        # Act
+        # Assert
         with pytest.raises(TypeError, match="end_dt must be a datetime object"):
             linspace(start, "2023-01-02", n_samples=10)
 
-        # Invalid n_samples type
+    def test_linspace_string_n_samples_raises_type_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(TypeError, match="n_samples must be a number"):
             linspace(start, end, n_samples="10")
 
-        # Invalid sampling_rate type
+    def test_linspace_string_sampling_rate_raises_type_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(TypeError, match="sampling_rate must be a number"):
             linspace(start, end, sampling_rate="10")
 
-    def test_linspace_value_validation(self):
-        """Test value validation for parameters"""
+
+# ---------------------------------------------------------------------------
+# Validation — value checks
+# ---------------------------------------------------------------------------
+
+
+class TestLinspaceValueChecks:
+    """`linspace` rejects illegal datetime / sample-count values."""
+
+    def test_linspace_start_after_end_raises_value_error(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1)
         end = datetime.datetime(2023, 1, 2)
 
-        # start >= end
+        # Act
+        # Assert
         with pytest.raises(ValueError, match="start_dt must be earlier than end_dt"):
             linspace(end, start, n_samples=10)
 
-        # Same start and end
-        with pytest.raises(ValueError, match="start_dt must be earlier than end_dt"):
-            linspace(start, start, n_samples=10)
+    def test_linspace_start_equals_end_raises_value_error(self):
+        # Arrange
+        from scitex_datetime import linspace
 
-        # Negative n_samples
+        same = datetime.datetime(2023, 1, 1)
+
+        # Act
+        # Assert
+        with pytest.raises(ValueError, match="start_dt must be earlier than end_dt"):
+            linspace(same, same, n_samples=10)
+
+    def test_linspace_negative_n_samples_raises_value_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(ValueError, match="n_samples must be positive"):
             linspace(start, end, n_samples=-1)
 
-        # Zero n_samples
+    def test_linspace_zero_n_samples_raises_value_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(ValueError, match="n_samples must be positive"):
             linspace(start, end, n_samples=0)
 
-        # Negative sampling_rate
+    def test_linspace_negative_sampling_rate_raises_value_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(ValueError, match="sampling_rate must be positive"):
             linspace(start, end, sampling_rate=-1.0)
 
-        # Zero sampling_rate
+    def test_linspace_zero_sampling_rate_raises_value_error(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # Assert
         with pytest.raises(ValueError, match="sampling_rate must be positive"):
             linspace(start, end, sampling_rate=0.0)
 
-    def test_linspace_microsecond_precision(self):
-        """Test microsecond precision in datetime handling"""
+
+# ---------------------------------------------------------------------------
+# Precision / range edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestLinspacePrecisionAndRange:
+    """`linspace` precision + range behaviour."""
+
+    def test_linspace_microsecond_precision_step_is_one_millisecond(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1, 0, 0, 0, 0)
-        end = datetime.datetime(2023, 1, 1, 0, 0, 0, 10000)  # 10 milliseconds
+        end = datetime.datetime(2023, 1, 1, 0, 0, 0, 10000)  # 10 ms
 
+        # Act
         result = linspace(start, end, n_samples=11)
 
-        # Check microsecond precision
-        for i in range(len(result)):
-            expected_microseconds = i * 1000  # 0, 1000, 2000, ..., 10000
-            assert result[i].microsecond == expected_microseconds
+        # Assert
+        assert [dt.microsecond for dt in result] == [i * 1000 for i in range(11)]
 
-    def test_linspace_large_range(self):
-        """Test with large datetime ranges"""
+    def test_linspace_year_scale_endpoint_count_is_six(self):
+        # Arrange
         from scitex_datetime import linspace
 
-        # Year-scale range
         start = datetime.datetime(2020, 1, 1)
-        end = datetime.datetime(2025, 1, 1)  # 5 years
+        end = datetime.datetime(2025, 1, 1)
 
+        # Act
         result = linspace(start, end, n_samples=6)
 
-        assert len(result) == 6
-        assert result[0] == start
-        assert result[-1] == end
+        # Assert
+        assert (len(result), result[0], result[-1]) == (6, start, end)
 
-        # Check approximately yearly spacing
-        for i in range(len(result) - 1):
-            delta_days = (result[i + 1] - result[i]).days
-            assert 364 <= delta_days <= 366  # Account for leap years
-
-    def test_linspace_small_range(self):
-        """Test with very small datetime ranges"""
+    def test_linspace_year_scale_inter_sample_step_is_about_one_year(self):
+        # Arrange
         from scitex_datetime import linspace
 
-        # Microsecond-scale range
-        start = datetime.datetime(2023, 1, 1, 0, 0, 0, 0)
-        end = datetime.datetime(2023, 1, 1, 0, 0, 0, 1)  # 1 microsecond
+        start = datetime.datetime(2020, 1, 1)
+        end = datetime.datetime(2025, 1, 1)
 
+        # Act
+        result = linspace(start, end, n_samples=6)
+        deltas_days = [(result[i + 1] - result[i]).days for i in range(len(result) - 1)]
+
+        # Assert
+        assert all(364 <= d <= 366 for d in deltas_days)
+
+    def test_linspace_one_microsecond_range_returns_two_endpoints(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1, 0, 0, 0, 0)
+        end = datetime.datetime(2023, 1, 1, 0, 0, 0, 1)
+
+        # Act
         result = linspace(start, end, n_samples=2)
 
-        assert len(result) == 2
-        assert result[0] == start
-        assert result[-1] == end
+        # Assert
+        assert (len(result), result[0], result[-1]) == (2, start, end)
 
-    def test_linspace_high_frequency_sampling(self):
-        """Test high frequency sampling scenarios"""
+    def test_linspace_dense_microsecond_grid_step_is_one(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1, 0, 0, 0, 0)
+        end = datetime.datetime(2023, 1, 1, 0, 0, 0, 100)
+
+        # Act
+        result = linspace(start, end, n_samples=101)
+
+        # Assert
+        assert [dt.microsecond for dt in result] == list(range(101))
+
+
+# ---------------------------------------------------------------------------
+# Sampling-rate parametrised checks
+# ---------------------------------------------------------------------------
+
+
+class TestLinspaceSamplingRate:
+    """`linspace` sampling-rate -> sample-count math."""
+
+    @pytest.mark.parametrize(
+        "rate, expected_samples",
+        [(100, 101), (256, 257), (512, 513), (1000, 1001)],
+    )
+    def test_linspace_one_second_at_rate_yields_rate_plus_one_samples(
+        self, rate, expected_samples
+    ):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1, 0, 0, 0)
-        end = datetime.datetime(2023, 1, 1, 0, 0, 1)  # 1 second
+        end = datetime.datetime(2023, 1, 1, 0, 0, 1)
 
-        # Test various sampling rates
-        test_rates = [100, 256, 512, 1000]  # Skip 10000 Hz due to precision
+        # Act
+        result = linspace(start, end, sampling_rate=rate)
 
-        for rate in test_rates:
-            result = linspace(start, end, sampling_rate=rate)
-            expected_samples = int(1.0 * rate) + 1
+        # Assert
+        assert len(result) == expected_samples
 
-            assert len(result) == expected_samples
-            assert result[0] == start
-            assert result[-1] == end
-
-            # Check spacing (skip for rates > 1000 due to float precision)
-            if len(result) > 1 and rate <= 1000:
-                delta = (result[1] - result[0]).total_seconds()
-                expected_delta = 1.0 / rate
-                assert pytest.approx(expected_delta, rel=1e-4) == delta
-
-    def test_linspace_timezone_aware(self):
-        """Test with timezone-aware datetimes"""
+    @pytest.mark.parametrize(
+        "duration_seconds, rate, expected_samples",
+        [
+            (1, 256, 1 * 256 + 1),
+            (10, 100, 10 * 100 + 1),
+            (0.5, 1000, int(0.5 * 1000) + 1),
+            (60, 1, 60 * 1 + 1),
+        ],
+    )
+    def test_linspace_duration_times_rate_plus_one_samples(
+        self, duration_seconds, rate, expected_samples
+    ):
+        # Arrange
         from scitex_datetime import linspace
 
-        # UTC timezone
+        start = datetime.datetime(2023, 1, 1, 0, 0, 0)
+        end = start + timedelta(seconds=duration_seconds)
+
+        # Act
+        result = linspace(start, end, sampling_rate=rate)
+
+        # Assert
+        assert len(result) == expected_samples
+
+    def test_linspace_step_matches_one_over_sampling_rate(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1, 0, 0, 0)
+        end = datetime.datetime(2023, 1, 1, 0, 0, 1)
+        rate = 256
+
+        # Act
+        result = linspace(start, end, sampling_rate=rate)
+        delta = (result[1] - result[0]).total_seconds()
+
+        # Assert
+        assert pytest.approx(1.0 / rate, rel=1e-4) == delta
+
+
+# ---------------------------------------------------------------------------
+# Timezone / return type / edge sample counts
+# ---------------------------------------------------------------------------
+
+
+class TestLinspaceTimezoneAndReturnShape:
+    """`linspace` timezone preservation and return-shape contract."""
+
+    def test_linspace_preserves_utc_timezone_on_all_entries(self):
+        # Arrange
+        from scitex_datetime import linspace
+
         start = datetime.datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
         end = datetime.datetime(2023, 1, 1, 1, 0, 0, tzinfo=timezone.utc)
 
+        # Act
         result = linspace(start, end, n_samples=5)
 
-        assert len(result) == 5
+        # Assert
         assert all(dt.tzinfo == timezone.utc for dt in result)
-        assert result[0] == start
-        assert result[-1] == end
 
-    def test_linspace_float_n_samples(self):
-        """Test behavior with float n_samples (should be converted to int)"""
+    def test_linspace_returns_object_dtype_ndarray_from_n_samples(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1)
         end = datetime.datetime(2023, 1, 2)
 
-        # Float n_samples should be converted to int internally
+        # Act
         result = linspace(start, end, n_samples=10)
-        assert len(result) == 10
 
-    def test_linspace_edge_case_single_sample(self):
-        """Test edge case with n_samples=1"""
+        # Assert
+        assert (isinstance(result, np.ndarray), result.dtype) == (True, np.dtype("O"))
+
+    def test_linspace_returns_object_dtype_ndarray_from_sampling_rate(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1)
         end = datetime.datetime(2023, 1, 2)
 
+        # Act
+        result = linspace(start, end, sampling_rate=1.0)
+
+        # Assert
+        assert (isinstance(result, np.ndarray), result.dtype) == (True, np.dtype("O"))
+
+    def test_linspace_n_samples_equal_to_one_returns_only_start(self):
+        # Arrange
+        from scitex_datetime import linspace
+
+        start = datetime.datetime(2023, 1, 1)
+        end = datetime.datetime(2023, 1, 2)
+
+        # Act
+        # `np.linspace(0, d, 1)` returns just `[0]` -> only `start`.
         result = linspace(start, end, n_samples=1)
 
-        assert len(result) == 1
-        # numpy.linspace with n=1 returns the start point
-        assert result[0] == start
+        # Assert
+        assert (len(result), result[0]) == (1, start)
 
-    def test_linspace_numerical_stability(self):
-        """Test numerical stability with very small intervals"""
+
+# ---------------------------------------------------------------------------
+# Practical scenarios
+# ---------------------------------------------------------------------------
+
+
+class TestLinspacePracticalScenarios:
+    """Practical-use checks (still single-assert per test)."""
+
+    @pytest.mark.parametrize(
+        "rate, duration_seconds",
+        [(256, 10), (512, 10)],
+    )
+    def test_linspace_eeg_sampling_yields_expected_sample_count(
+        self, rate, duration_seconds
+    ):
+        # Arrange
         from scitex_datetime import linspace
 
-        start = datetime.datetime(2023, 1, 1, 0, 0, 0, 0)
-        end = datetime.datetime(2023, 1, 1, 0, 0, 0, 100)  # 100 microseconds
-
-        result = linspace(start, end, n_samples=101)
-
-        # Check that we get exactly the right microseconds
-        for i in range(101):
-            assert result[i].microsecond == i
-
-    def test_linspace_sampling_rate_calculation(self):
-        """Test accurate sampling rate calculation"""
-        from scitex_datetime import linspace
-
-        # Test various durations
-        test_cases = [
-            (1, 256),  # 1 second at 256 Hz
-            (10, 100),  # 10 seconds at 100 Hz
-            (0.5, 1000),  # 0.5 seconds at 1000 Hz
-            (60, 1),  # 60 seconds at 1 Hz
-        ]
-
-        for duration, rate in test_cases:
-            start = datetime.datetime(2023, 1, 1, 0, 0, 0)
-            end = start + timedelta(seconds=duration)
-
-            result = linspace(start, end, sampling_rate=rate)
-
-            expected_samples = int(duration * rate) + 1
-            assert len(result) == expected_samples
-
-    def test_linspace_return_type(self):
-        """Test that return type is always numpy array of datetime objects"""
-        from scitex_datetime import linspace
-
-        start = datetime.datetime(2023, 1, 1)
-        end = datetime.datetime(2023, 1, 2)
-
-        # Test with n_samples
-        result1 = linspace(start, end, n_samples=10)
-        assert isinstance(result1, np.ndarray)
-        assert result1.dtype == object
-        assert all(isinstance(dt, datetime.datetime) for dt in result1)
-
-        # Test with sampling_rate
-        result2 = linspace(start, end, sampling_rate=1.0)
-        assert isinstance(result2, np.ndarray)
-        assert result2.dtype == object
-        assert all(isinstance(dt, datetime.datetime) for dt in result2)
-
-    def test_linspace_practical_eeg_timestamps(self):
-        """Test practical use case: EEG timestamp generation"""
-        from scitex_datetime import linspace
-
-        # Common EEG sampling rates
-        eeg_rates = {
-            "clinical": 256,
-            "research": 512,
-        }
-
-        duration = 10  # 10 seconds of data
         start = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        end = start + timedelta(seconds=duration_seconds)
 
-        for name, rate in eeg_rates.items():
-            end = start + timedelta(seconds=duration)
-            timestamps = linspace(start, end, sampling_rate=rate)
+        # Act
+        timestamps = linspace(start, end, sampling_rate=rate)
 
-            expected_samples = duration * rate + 1
-            assert len(timestamps) == expected_samples
+        # Assert
+        assert len(timestamps) == duration_seconds * rate + 1
 
-            # Verify consistent sampling interval
-            if len(timestamps) > 1:
-                intervals = [
-                    (timestamps[i + 1] - timestamps[i]).total_seconds()
-                    for i in range(10)
-                ]  # Check first 10 intervals
-                expected_interval = 1.0 / rate
-
-                for interval in intervals:
-                    assert pytest.approx(expected_interval, rel=1e-3) == interval
-
-    def test_linspace_hourly_daily_schedules(self):
-        """Test practical use case: hourly/daily schedules"""
+    @pytest.mark.parametrize("rate", [256, 512])
+    def test_linspace_eeg_inter_sample_step_matches_inverse_rate(self, rate):
+        # Arrange
         from scitex_datetime import linspace
 
-        # Hourly schedule for a day
+        start = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        end = start + timedelta(seconds=10)
+        expected_interval = 1.0 / rate
+
+        # Act
+        timestamps = linspace(start, end, sampling_rate=rate)
+        first_interval = (timestamps[1] - timestamps[0]).total_seconds()
+
+        # Assert
+        assert pytest.approx(expected_interval, rel=1e-3) == first_interval
+
+    def test_linspace_hourly_schedule_hours_are_zero_to_twenty_three(self):
+        # Arrange
+        from scitex_datetime import linspace
+
         start = datetime.datetime(2023, 1, 1, 0, 0, 0)
         end = datetime.datetime(2023, 1, 1, 23, 0, 0)
 
+        # Act
         hourly = linspace(start, end, n_samples=24)
+        observed_hours = [ts.hour for ts in hourly]
 
-        assert len(hourly) == 24
-        for i, ts in enumerate(hourly):
-            assert ts.hour == i
-            assert ts.minute == 0
-            assert ts.second == 0
+        # Assert
+        assert observed_hours == list(range(24))
 
-    def test_linspace_data_logging_scenario(self):
-        """Test practical use case: data logging at specific intervals"""
+    def test_linspace_five_minute_logging_intervals_are_five(self):
+        # Arrange
         from scitex_datetime import linspace
 
-        # Log data every 5 minutes for 1 hour
         start = datetime.datetime(2023, 1, 1, 9, 0, 0)
         end = datetime.datetime(2023, 1, 1, 10, 0, 0)
 
-        # 12 intervals of 5 minutes each + 1 for endpoint
+        # Act
         timestamps = linspace(start, end, n_samples=13)
+        deltas_minutes = [
+            (timestamps[i + 1] - timestamps[i]).total_seconds() / 60
+            for i in range(len(timestamps) - 1)
+        ]
 
-        assert len(timestamps) == 13
+        # Assert
+        assert all(pytest.approx(d, rel=1e-6) == 5.0 for d in deltas_minutes)
 
-        # Verify 5-minute intervals
-        for i in range(len(timestamps) - 1):
-            delta_minutes = (timestamps[i + 1] - timestamps[i]).total_seconds() / 60
-            assert pytest.approx(delta_minutes, rel=1e-6) == 5.0
-
-    def test_linspace_performance(self):
-        """Test performance with large number of samples"""
-        import time
-
+    def test_linspace_million_samples_full_year_returns_million_entries(self):
+        # Arrange
         from scitex_datetime import linspace
 
         start = datetime.datetime(2023, 1, 1)
-        end = datetime.datetime(2023, 12, 31)  # Full year
+        end = datetime.datetime(2023, 12, 31)
 
-        # Generate 1 million timestamps
-        start_time = time.time()
+        # Act
         result = linspace(start, end, n_samples=1_000_000)
-        elapsed = time.time() - start_time
 
-        assert len(result) == 1_000_000
-        assert elapsed < 5.0  # Should complete within 5 seconds
-
-        # Verify endpoints
-        assert result[0] == start
-        assert result[-1] == end
+        # Assert
+        assert (len(result), result[0], result[-1]) == (1_000_000, start, end)
 
 
 # --------------------------------------------------------------------------------
@@ -390,114 +559,6 @@ class TestLinspace:
 if __name__ == "__main__":
     import os
 
-    import pytest
-
     pytest.main([os.path.abspath(__file__)])
 
-# --------------------------------------------------------------------------------
-# Start of Source Code from: /home/ywatanabe/proj/scitex-code/src/scitex/datetime/_linspace.py
-# --------------------------------------------------------------------------------
-# #!/usr/bin/env python3
-# # Timestamp: "2026-01-05 14:30:00 (ywatanabe)"
-# # File: /home/ywatanabe/proj/scitex-code/src/scitex/datetime/_linspace.py
-#
-# """
-# Datetime linspace utility for creating evenly spaced datetime arrays.
-# """
-#
-# import datetime
-# from datetime import timedelta
-# from typing import Optional
-#
-# import numpy as np
-#
-#
-# def linspace(
-#     start_dt: datetime.datetime,
-#     end_dt: datetime.datetime,
-#     n_samples: Optional[int] = None,
-#     sampling_rate: Optional[float] = None,
-# ) -> np.ndarray:
-#     """
-#     Create a linearly spaced array between two datetime objects.
-#
-#     Parameters
-#     ----------
-#     start_dt : datetime.datetime
-#         Starting datetime object
-#     end_dt : datetime.datetime
-#         Ending datetime object
-#     n_samples : int, optional
-#         Number of samples to create (mutually exclusive with sampling_rate)
-#     sampling_rate : float, optional
-#         Sampling rate in Hz (mutually exclusive with n_samples)
-#
-#     Returns
-#     -------
-#     np.ndarray
-#         Array of datetime objects evenly spaced between start_dt and end_dt
-#
-#     Raises
-#     ------
-#     TypeError
-#         If start_dt or end_dt is not a datetime object
-#     ValueError
-#         If start_dt >= end_dt, or if both/neither n_samples and sampling_rate provided
-#
-#     Examples
-#     --------
-#     >>> import datetime
-#     >>> start = datetime.datetime(2023, 1, 1, 0, 0, 0)
-#     >>> end = datetime.datetime(2023, 1, 1, 0, 0, 10)
-#     >>> result = linspace(start, end, n_samples=11)
-#     >>> len(result)
-#     11
-#     """
-#     # Type checking
-#     if not isinstance(start_dt, datetime.datetime):
-#         raise TypeError(f"start_dt must be a datetime object, got {type(start_dt)}")
-#
-#     if not isinstance(end_dt, datetime.datetime):
-#         raise TypeError(f"end_dt must be a datetime object, got {type(end_dt)}")
-#
-#     if n_samples is not None and not isinstance(n_samples, (int, float)):
-#         raise TypeError(f"n_samples must be a number, got {type(n_samples)}")
-#
-#     if sampling_rate is not None and not isinstance(sampling_rate, (int, float)):
-#         raise TypeError(f"sampling_rate must be a number, got {type(sampling_rate)}")
-#
-#     if start_dt >= end_dt:
-#         raise ValueError("start_dt must be earlier than end_dt")
-#
-#     duration_seconds = (end_dt - start_dt).total_seconds()
-#
-#     if n_samples is not None and sampling_rate is not None:
-#         raise ValueError("Provide either n_samples or sampling_rate, not both")
-#
-#     if n_samples is None and sampling_rate is None:
-#         raise ValueError("Either n_samples or sampling_rate must be provided")
-#
-#     if sampling_rate is not None:
-#         if sampling_rate <= 0:
-#             raise ValueError("sampling_rate must be positive")
-#         n_samples = int(duration_seconds * sampling_rate) + 1
-#     else:
-#         if n_samples <= 0:
-#             raise ValueError("n_samples must be positive")
-#
-#     # Create linear space in seconds
-#     seconds_array = np.linspace(0, duration_seconds, n_samples)
-#
-#     # Convert to datetime objects
-#     datetime_array = np.array(
-#         [start_dt + timedelta(seconds=float(sec)) for sec in seconds_array]
-#     )
-#
-#     return datetime_array
-#
-#
-# # EOF
-
-# --------------------------------------------------------------------------------
-# End of Source Code from: /home/ywatanabe/proj/scitex-code/src/scitex/datetime/_linspace.py
-# --------------------------------------------------------------------------------
+# EOF

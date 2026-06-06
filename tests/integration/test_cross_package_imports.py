@@ -26,6 +26,17 @@ CROSS_PACKAGE_IMPORTS = [
 
 
 @pytest.mark.parametrize("module_name", CROSS_PACKAGE_IMPORTS)
-def test_cross_package_import(module_name):
+def test_cross_package_dependency_module_importable(module_name):
     """Importing scitex-datetime's declared cross-package dependency must succeed."""
-    pytest.importorskip(module_name)
+    # Arrange
+    # `pytest.importorskip` returns the module if installed, else skips
+    # — so the parametrise row only runs when the peer is present.
+    module = pytest.importorskip(module_name)
+
+    # Act
+    imported_name = getattr(module, "__name__", None)
+
+    # Assert
+    # The peer must self-report the same import name we asked for —
+    # a renamed submodule would still import but be wired wrong.
+    assert imported_name == module_name

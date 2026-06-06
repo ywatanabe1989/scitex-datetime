@@ -11,4 +11,4 @@ tags: [scitex-datetime-installation]
 pip install scitex-datetime
 ```
 
-System requirements: Python ≥ 3.11.
+System requirements: Python ≥ 3.9.

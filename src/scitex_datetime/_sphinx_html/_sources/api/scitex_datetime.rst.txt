@@ -1,6 +1,0 @@
-﻿scitex\_datetime
-================
-
-.. automodule:: scitex_datetime
-
-   
