@@ -7,6 +7,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-07
+
+- feat: port `TimeStamper` from `scitex-gen` `_legacy/_TimeStamper.py`
+  (Phase B of the scitex-gen full retirement wave). Pandas-backed
+  stopwatch class with `__call__` to record a stamp, a `record`
+  property exposing the underlying DataFrame, and `delta(id1, id2)`
+  for diffs between any two stamps.
+- Add `pandas` to runtime dependencies for `TimeStamper`'s record
+  storage.
+
 ## [0.1.4] — 2026-01-05
 
 - ci: resync integrated release pipeline from scitex-dev v0.11.20
